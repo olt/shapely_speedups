@@ -4,6 +4,7 @@
 # Copyright (c) 2007, Sean C. Gillies
 # Transcription to cython: Copyright (c) 2011, Oliver Tonnhofer
 
+import ctypes
 from shapely.geos import lgeos
 
 cdef extern from "geos_c.h":
@@ -50,11 +51,10 @@ def geos_linestring_from_py(ob, update_geom=None, update_ndim=0):
         assert n == 2 or n == 3
 
         # Make pointer to the coordinate array
-        # TODO olt: when does the exception raises?
-        # try:
-        cp = <double *><long>array['data'][0]
-        # except ArgumentError:
-        #     cp = array['data']
+        if isinstance(array['data'], ctypes.Array):
+            cp = <double *><long>ctypes.addressof(array['data'])
+        else:
+            cp = <double *><long>array['data'][0]
 
         # Create a coordinate sequence
         if update_geom is not None:
@@ -146,11 +146,10 @@ def geos_linearring_from_py(ob, update_geom=None, update_ndim=0):
         assert n == 2 or n == 3
 
         # Make pointer to the coordinate array
-        # TODO olt: when does the exception raises?
-        # try:
-        cp = <double *><long>array['data'][0]
-        # except ArgumentError:
-        #     cp = array['data']
+        if isinstance(array['data'], ctypes.Array):
+            cp = <double *><long>ctypes.addressof(array['data'])
+        else:
+            cp = <double *><long>array['data'][0]
 
         # Add closing coordinates to sequence?
         if cp[0] != cp[m*n-n] or cp[1] != cp[m*n-n+1]:
