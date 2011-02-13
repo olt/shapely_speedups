@@ -1,5 +1,6 @@
 # geos_linestring_from_py was transcribed from shapely.geometry.linestring
 # geos_linearring_from_py was transcribed from shapely.geometry.polygon
+# coordseq_ctypes was transcribed from shapely.coords.CoordinateSequence.ctypes
 #
 # Copyright (c) 2007, Sean C. Gillies
 # Transcription to cython: Copyright (c) 2011, Oliver Tonnhofer
@@ -13,9 +14,13 @@ cdef extern from "geos_c.h":
     cdef struct GEOSContextHandle_HS
     GEOSCoordSequence *GEOSCoordSeq_create_r(GEOSContextHandle_HS *,double, double)
     GEOSCoordSequence *GEOSGeom_getCoordSeq_r(GEOSContextHandle_HS *, GEOSGeometry *)
+    int GEOSCoordSeq_getSize_r(GEOSContextHandle_HS *, GEOSCoordSequence *, int *)
     int GEOSCoordSeq_setX_r(GEOSContextHandle_HS *, GEOSCoordSequence *, int, double)
     int GEOSCoordSeq_setY_r(GEOSContextHandle_HS *, GEOSCoordSequence *, int, double)
     int GEOSCoordSeq_setZ_r(GEOSContextHandle_HS *, GEOSCoordSequence *, int, double)
+    int GEOSCoordSeq_getX_r(GEOSContextHandle_HS *, GEOSCoordSequence *, int, double *)
+    int GEOSCoordSeq_getY_r(GEOSContextHandle_HS *, GEOSCoordSequence *, int, double *)
+    int GEOSCoordSeq_getZ_r(GEOSContextHandle_HS *, GEOSCoordSequence *, int, double *)
     GEOSGeometry *GEOSGeom_createLineString_r(GEOSContextHandle_HS *, GEOSCoordSequence *)
     GEOSGeometry *GEOSGeom_createLinearRing_r(GEOSContextHandle_HS *, GEOSCoordSequence *)
     void GEOSGeom_destroy_r(GEOSContextHandle_HS *, GEOSGeometry *)
@@ -25,6 +30,9 @@ cdef inline GEOSGeometry *cast_geom(long geom_addr):
 
 cdef inline GEOSContextHandle_HS *cast_handle(long handle_addr):
     return <GEOSContextHandle_HS *>handle_addr
+
+cdef inline GEOSCoordSequence *cast_seq(long handle_addr):
+    return <GEOSCoordSequence *>handle_addr
 
 def destroy(geom):
     GEOSGeom_destroy_r(cast_handle(lgeos.geos_handle), cast_geom(geom))
@@ -258,3 +266,30 @@ def geos_linearring_from_py(ob, update_geom=None, update_ndim=0):
         return None
     else:
         return <long>GEOSGeom_createLinearRing_r(handle, cs), n
+
+
+def coordseq_ctypes(self):
+    cdef int i, n, m
+    cdef double temp
+    cdef GEOSContextHandle_HS *handle = cast_handle(lgeos.geos_handle)
+    cdef GEOSCoordSequence *cs
+    cdef double *data_p
+    self._update()
+    n = self._ndim
+    m = self.__len__()
+    array_type = ctypes.c_double * (m * n)
+    data = array_type()
+    
+    cs = cast_seq(self._cseq)
+    data_p = <double *><long>ctypes.addressof(data)
+    
+    for i in xrange(m):
+        GEOSCoordSeq_getX_r(handle, cs, i, &temp)
+        data_p[n*i] = temp
+        GEOSCoordSeq_getY_r(handle, cs, i, &temp)
+        data_p[n*i+1] = temp
+        if n == 3: # TODO: use hasz
+            GEOSCoordSeq_getZ_r(handle, cs, i, &temp)
+            data_p[n*i+2] = temp
+    return data
+
