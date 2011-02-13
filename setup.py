@@ -8,7 +8,7 @@ setup_args = dict(
     long_description = open('README.md').read(),
     license = 'BSD',
     packages = find_packages(),
-    version = '0.1dev',
+    version = '0.2',
     ext_modules = ext_modules,
     )
 
