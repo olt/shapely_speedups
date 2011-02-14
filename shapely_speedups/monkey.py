@@ -1,4 +1,4 @@
-from shapely.geometry import linestring, polygon
+from shapely.geometry import linestring, polygon, multilinestring
 from shapely import coords
 from shapely_speedups import speedups
 
@@ -13,6 +13,9 @@ def patch_shapely():
     
     _orig['geos_linestring_from_py'] = linestring.geos_linestring_from_py
     linestring.geos_linestring_from_py = speedups.geos_linestring_from_py
+    
+    _orig['geos_linestring_from_py'] = multilinestring.geos_linestring_from_py
+    multilinestring.geos_linestring_from_py = speedups.geos_linestring_from_py
 
     _orig['geos_linearring_from_py']  = polygon.geos_linearring_from_py
     polygon.geos_linearring_from_py = speedups.geos_linearring_from_py
@@ -23,5 +26,6 @@ def unpatch_shapely():
 
     coords.CoordinateSequence.ctypes = _orig['CoordinateSequence.ctypes']
     linestring.geos_linestring_from_py = _orig['geos_linestring_from_py']
+    multilinestring.geos_linestring_from_py = _orig['geos_linestring_from_py']
     polygon.geos_linearring_from_py = _orig['geos_linearring_from_py']
     _orig.clear()
